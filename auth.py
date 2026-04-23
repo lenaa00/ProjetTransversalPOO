@@ -7,6 +7,7 @@ from crypto import (
     decrypt,
     hash_data,
     add_salt,
+    generate_key_pair,  # ✅ AJOUT
 )
 import mysql.connector
 import hashlib, os
@@ -20,6 +21,19 @@ def get_db_connection():
         database="rsafe",
     )
     return conn
+
+
+# ✅ AJOUT : sauvegarde locale clé privée
+def sauvegarder_cle_privee_local(identifiant: str, cle_privee_pem: bytes):
+    dossier = "cles_privees"
+    os.makedirs(dossier, exist_ok=True)
+
+    chemin = os.path.join(dossier, f"{identifiant}_private.pem")
+
+    with open(chemin, "wb") as f:
+        f.write(cle_privee_pem)
+
+    return chemin
 
 
 class ApplicationMessagerie(tk.Tk):
@@ -98,7 +112,7 @@ class PageAccueil(tk.Frame):
             frame_central, text="Nouveau ?", padx=20, pady=20
         )
         self.inscription.pack(side="left", padx=20, fill="y")
-        
+
         tk.Button(
             self.inscription,
             text="Créer un compte",
@@ -123,7 +137,6 @@ class PageAccueil(tk.Frame):
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
 
-          
             sql = "SELECT * FROM utilisateurs WHERE nom = %s"
             cursor.execute(sql, (identifiant,))
             user = cursor.fetchone()
@@ -149,13 +162,13 @@ class PageAccueil(tk.Frame):
         else:
             messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect.")
 
+
 class PageInscription(tk.Frame):
     """Page de création de compte."""
 
     def __init__(self, parent, controleur):
         super().__init__(parent)
         self.controleur = controleur
-
 
         self.compte = tk.LabelFrame(
             self,
@@ -166,7 +179,6 @@ class PageInscription(tk.Frame):
         )
         self.compte.pack(expand=True)
 
-
         tk.Label(self.compte, text="Clé Publique").grid(
             row=0, column=0, sticky="w", pady=5
         )
@@ -176,20 +188,17 @@ class PageInscription(tk.Frame):
             row=0, column=2, pady=5
         )
 
-
         tk.Label(self.compte, text="Nom Complet").grid(
             row=1, column=0, sticky="w", pady=5
         )
         self.entree_nom = tk.Entry(self.compte, width=30)
         self.entree_nom.grid(row=1, column=1, columnspan=2, sticky="we", padx=5, pady=5)
 
-
         tk.Label(self.compte, text="Identifiant unique").grid(
             row=2, column=0, sticky="w", pady=5
         )
         self.entree_id = tk.Entry(self.compte, width=30)
         self.entree_id.grid(row=2, column=1, columnspan=2, sticky="we", padx=5, pady=5)
-
 
         tk.Label(self.compte, text="Mot de passe robuste").grid(
             row=3, column=0, sticky="w", pady=5
@@ -204,7 +213,6 @@ class PageInscription(tk.Frame):
             justify="left",
         ).grid(row=4, column=1, sticky="w")
 
-
         tk.Label(self.compte, text="Confirmer le mdp").grid(
             row=5, column=0, sticky="w", pady=5
         )
@@ -212,7 +220,6 @@ class PageInscription(tk.Frame):
         self.entree_mdp_conf.grid(
             row=5, column=1, columnspan=2, sticky="we", padx=5, pady=5
         )
-
 
         frame_btns = tk.Frame(self.compte)
         frame_btns.grid(row=6, column=0, columnspan=3, pady=20)
@@ -247,12 +254,10 @@ class PageInscription(tk.Frame):
         return sel, hash_mdp
 
     def finaliser_inscription(self):
-        cle_publique = self.entree_cle_pub.get().strip()
         nom_complet = self.entree_nom.get().strip()
         identifiant = self.entree_id.get().strip()
         mdp1 = self.entree_mdp.get()
         mdp2 = self.entree_mdp_conf.get()
-
 
         if not nom_complet or not mdp1 or not mdp2:
             messagebox.showerror("Erreur", "Nom et mot de passe sont obligatoires.")
@@ -270,9 +275,13 @@ class PageInscription(tk.Frame):
             )
             return
 
-
         sel, hash_mdp = self.generer_sel_et_hash(mdp1)
 
+        
+        cle_privee, cle_publique = generate_key_pair()
+
+        
+        sauvegarder_cle_privee_local(identifiant, cle_privee)
 
         try:
             conn = get_db_connection()
@@ -282,9 +291,8 @@ class PageInscription(tk.Frame):
                 INSERT INTO utilisateurs (nom, mot_de_passe, sel, cle_publique)
                 VALUES (%s, %s, %s, %s)
             """
-            prenom = ""  
-            email = ""   
-            valeurs = (nom_complet, hash_mdp, sel, cle_publique)
+
+            valeurs = (nom_complet, hash_mdp, sel, cle_publique.decode("utf-8"))
 
             cursor.execute(sql, valeurs)
             conn.commit()
