@@ -77,7 +77,7 @@ def add_salt(data):
     return salt, salt + data
 
 
-# Pour 
+# Pour tester le salage
 data = "Voici les données à hacher".encode("utf-8")
 salt, salted_data = add_salt(data)
 hashed_data = hash_data(salted_data)
