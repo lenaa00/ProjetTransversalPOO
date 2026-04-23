@@ -83,3 +83,19 @@ salt, salted_data = add_salt(data)
 hashed_data = hash_data(salted_data)
 print("Salt:", salt)
 print("Hash:", hashed_data)
+
+# Pour hasher un mot de passe avec un sel
+def hash_password_with_salt(password: str) -> tuple[str, str]:
+    data = password.encode("utf-8")
+    salt = os.urandom(16)
+    salted = salt + data
+    hashed = hash_data(salted)
+    return salt.hex(), hashed.hex()
+
+# Test hashage de mot de passe
+def verify_password(password: str, salt_hex: str, stored_hash_hex: str) -> bool:
+    salt = bytes.fromhex(salt_hex)
+    data = password.encode("utf-8")
+    salted = salt + data
+    hashed = hash_data(salted).hex()
+    return hashed == stored_hash_hex
