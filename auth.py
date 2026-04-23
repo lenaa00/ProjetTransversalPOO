@@ -279,12 +279,12 @@ class PageInscription(tk.Frame):
             cursor = conn.cursor()
 
             sql = """
-                INSERT INTO utilisateurs (nom, prenom, email, mot_de_passe, sel, cle_publique)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO utilisateurs (nom, mot_de_passe, sel, cle_publique)
+                VALUES (%s, %s, %s, %s)
             """
             prenom = ""  
             email = ""   
-            valeurs = (nom_complet, prenom, email, hash_mdp, sel, cle_publique)
+            valeurs = (nom_complet, hash_mdp, sel, cle_publique)
 
             cursor.execute(sql, valeurs)
             conn.commit()
