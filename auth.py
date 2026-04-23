@@ -19,7 +19,7 @@ class ApplicationMessagerie(tk.Tk):
         self.geometry("800x600")
         self.minsize(600, 500)
 
-        # Remplacement de 'conteneur' par 'fenetre'
+        
         self.fenetre = tk.Frame(self)
         self.fenetre.pack(fill="both", expand=True)
         self.fenetre.grid_rowconfigure(0, weight=1)
@@ -27,7 +27,7 @@ class ApplicationMessagerie(tk.Tk):
 
         self.ecrans = {}
         
-        # Remplacement par tes anciens noms de pages
+        
         for F in (PageAccueil, PageInscription):
             ecran = F(self.fenetre, self)
             self.ecrans[F] = ecran
@@ -57,7 +57,7 @@ class PageAccueil(tk.Frame):
         frame_central = tk.Frame(self)
         frame_central.pack(expand=True)
 
-        # Remplacement par 'self.login'
+       
         self.login = tk.LabelFrame(frame_central, text="Connexion User", padx=20, pady=20)
         self.login.pack(side="left", padx=20, fill="y")
 
@@ -98,7 +98,7 @@ class PageInscription(tk.Frame):
         super().__init__(parent)
         self.controleur = controleur
 
-        # Remplacement par 'self.compte'
+        
         self.compte = tk.LabelFrame(self, text="Créer un compte sécurisé", font=("Times New Roman", 14, "bold"), padx=30, pady=20)
         self.compte.pack(expand=True)
 
@@ -143,5 +143,5 @@ class PageInscription(tk.Frame):
         self.controleur.afficher_accueil()
 
 if __name__ == "__main__":
-    accueil = ApplicationMessagerie() # Reprend ton nom d'instance "accueil"
+    accueil = ApplicationMessagerie() 
     accueil.mainloop()
