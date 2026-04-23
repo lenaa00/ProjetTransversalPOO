@@ -19,13 +19,13 @@ class ApplicationMessagerie(tk.Tk):
         self.geometry("800x600")
         self.minsize(600, 500)
 
-        # Conteneur principal qui va accueillir les écrans
+       
         self.conteneur = tk.Frame(self)
         self.conteneur.pack(fill="both", expand=True)
         self.conteneur.grid_rowconfigure(0, weight=1)
         self.conteneur.grid_columnconfigure(0, weight=1)
 
-        # Dictionnaire pour stocker les vues
+       
         self.ecrans = {}
         
         for F in (EcranAccueil, EcranInscription):
@@ -33,7 +33,7 @@ class ApplicationMessagerie(tk.Tk):
             self.ecrans[F] = ecran
             ecran.grid(row=0, column=0, sticky="nsew")
 
-        # Démarrer sur l'accueil
+       
         self.afficher_ecran(EcranAccueil)
 
     def afficher_ecran(self, page_class):
@@ -50,11 +50,11 @@ class EcranAccueil(tk.Frame):
 
         tk.Label(self, text="PAGE D'ACCUEIL", font=("Times New Roman", 20, "bold")).pack(pady=40)
 
-        # Frame central pour aligner login et inscription proprement
+        
         frame_central = tk.Frame(self)
         frame_central.pack(expand=True)
 
-        # --- Section Connexion ---
+        
         login_frame = tk.LabelFrame(frame_central, text="Connexion User", padx=20, pady=20)
         login_frame.pack(side="left", padx=20, fill="y")
 
@@ -71,7 +71,7 @@ class EcranAccueil(tk.Frame):
 
         tk.Button(login_frame, text="SE CONNECTER", bg="green", fg="white", command=self.se_connecter).pack(fill="x")
 
-        # --- Section Inscription ---
+        
         inscription_frame = tk.LabelFrame(frame_central, text="Nouveau ?", padx=20, pady=20)
         inscription_frame.pack(side="left", padx=20, fill="y")
 
@@ -86,7 +86,7 @@ class EcranAccueil(tk.Frame):
             messagebox.showinfo("Succès", f"Clé importée :\n{fichier}")
 
     def se_connecter(self):
-        # Exemple de récupération des données tapées
+        
         user = self.entree_id.get()
         messagebox.showinfo("Connexion", f"Tentative de connexion pour : {user}")
 
@@ -100,7 +100,7 @@ class EcranInscription(tk.Frame):
         compte_frame = tk.LabelFrame(self, text="Créer un compte sécurisé", font=("Times New Roman", 14, "bold"), padx=30, pady=20)
         compte_frame.pack(expand=True)
 
-        # Utilisation de Grid pour un formulaire bien aligné
+       
         tk.Label(compte_frame, text="Clé Publique").grid(row=0, column=0, sticky="w", pady=5)
         self.entree_cle_pub = tk.Entry(compte_frame, width=30)
         self.entree_cle_pub.grid(row=0, column=1, padx=5, pady=5)
@@ -124,7 +124,7 @@ class EcranInscription(tk.Frame):
         self.entree_mdp_conf = tk.Entry(compte_frame, show="*", width=30)
         self.entree_mdp_conf.grid(row=5, column=1, columnspan=2, sticky="we", padx=5, pady=5)
 
-        # Boutons
+        
         frame_btns = tk.Frame(compte_frame)
         frame_btns.grid(row=6, column=0, columnspan=3, pady=20)
         
