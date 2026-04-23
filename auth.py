@@ -112,9 +112,42 @@ class PageAccueil(tk.Frame):
             messagebox.showinfo("Succès", f"Clé importée :\n{fichier}")
 
     def se_connecter(self):
-        user = self.entree_id.get()
-        messagebox.showinfo("Connexion", f"Tentative de connexion pour : {user}")
+        identifiant = self.entree_id.get().strip()
+        mdp_saisi = self.entree_mdp.get()
 
+        if not identifiant or not mdp_saisi:
+            messagebox.showerror("Erreur", "Identifiant et mot de passe obligatoires.")
+            return
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+          
+            sql = "SELECT * FROM utilisateurs WHERE nom = %s"
+            cursor.execute(sql, (identifiant,))
+            user = cursor.fetchone()
+
+            cursor.close()
+            conn.close()
+        except mysql.connector.Error as e:
+            messagebox.showerror("Erreur BDD", f"Erreur de connexion à la BDD : {e}")
+            return
+
+        if not user:
+            messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect.")
+            return
+
+        sel_bdd = user["sel"]
+        hash_bdd = user["mot_de_passe"]
+
+        a_hasher = (mdp_saisi + sel_bdd).encode("utf-8")
+        hash_saisi = hashlib.sha256(a_hasher).hexdigest()
+
+        if hash_saisi == hash_bdd:
+            messagebox.showinfo("Succès", f"Connexion réussie, bienvenue {user['nom']} !")
+        else:
+            messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect.")
 
 class PageInscription(tk.Frame):
     """Page de création de compte."""
@@ -123,7 +156,7 @@ class PageInscription(tk.Frame):
         super().__init__(parent)
         self.controleur = controleur
 
-        # Cadre principal
+
         self.compte = tk.LabelFrame(
             self,
             text="Créer un compte sécurisé",
@@ -133,7 +166,7 @@ class PageInscription(tk.Frame):
         )
         self.compte.pack(expand=True)
 
-        # Clé publique
+
         tk.Label(self.compte, text="Clé Publique").grid(
             row=0, column=0, sticky="w", pady=5
         )
@@ -143,21 +176,21 @@ class PageInscription(tk.Frame):
             row=0, column=2, pady=5
         )
 
-        # Nom complet
+
         tk.Label(self.compte, text="Nom Complet").grid(
             row=1, column=0, sticky="w", pady=5
         )
         self.entree_nom = tk.Entry(self.compte, width=30)
         self.entree_nom.grid(row=1, column=1, columnspan=2, sticky="we", padx=5, pady=5)
 
-        # Identifiant unique
+
         tk.Label(self.compte, text="Identifiant unique").grid(
             row=2, column=0, sticky="w", pady=5
         )
         self.entree_id = tk.Entry(self.compte, width=30)
         self.entree_id.grid(row=2, column=1, columnspan=2, sticky="we", padx=5, pady=5)
 
-        # Mot de passe
+
         tk.Label(self.compte, text="Mot de passe robuste").grid(
             row=3, column=0, sticky="w", pady=5
         )
@@ -171,7 +204,7 @@ class PageInscription(tk.Frame):
             justify="left",
         ).grid(row=4, column=1, sticky="w")
 
-        # Confirmation mdp
+
         tk.Label(self.compte, text="Confirmer le mdp").grid(
             row=5, column=0, sticky="w", pady=5
         )
@@ -180,7 +213,7 @@ class PageInscription(tk.Frame):
             row=5, column=1, columnspan=2, sticky="we", padx=5, pady=5
         )
 
-        # Frame des boutons
+
         frame_btns = tk.Frame(self.compte)
         frame_btns.grid(row=6, column=0, columnspan=3, pady=20)
 
@@ -220,7 +253,7 @@ class PageInscription(tk.Frame):
         mdp1 = self.entree_mdp.get()
         mdp2 = self.entree_mdp_conf.get()
 
-        # Vérifs de base
+
         if not nom_complet or not mdp1 or not mdp2:
             messagebox.showerror("Erreur", "Nom et mot de passe sont obligatoires.")
             return
@@ -237,10 +270,10 @@ class PageInscription(tk.Frame):
             )
             return
 
-        # Générer sel + hash
+
         sel, hash_mdp = self.generer_sel_et_hash(mdp1)
 
-        # Enregistrer en BDD
+
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -249,8 +282,8 @@ class PageInscription(tk.Frame):
                 INSERT INTO utilisateurs (nom, prenom, email, mot_de_passe, sel, cle_publique)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
-            prenom = ""  # à améliorer si tu ajoutes un champ "Prénom"
-            email = ""   # à améliorer si tu ajoutes un champ "Email"
+            prenom = ""  
+            email = ""   
             valeurs = (nom_complet, prenom, email, hash_mdp, sel, cle_publique)
 
             cursor.execute(sql, valeurs)
