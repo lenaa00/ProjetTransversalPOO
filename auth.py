@@ -3,8 +3,6 @@ from tkinter import messagebox, filedialog
 from crypto import (
     encrypt,
     decrypt,
-    hash_data,
-    add_salt,
     generate_key_pair,  
 )
 import mysql.connector
