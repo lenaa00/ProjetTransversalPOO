@@ -3,6 +3,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 
+SEL_UNIQUE = "MichaelJackson"
+
 # Pour générer les clés publiques et privées
 def generate_key_pair():
     private_key = rsa.generate_private_key(
@@ -83,3 +85,4 @@ def verify_password(password: str, salt_hex: str, stored_hash_hex: str) -> bool:
     salted = salt + data
     hashed = hash_data(salted).hex()
     return hashed == stored_hash_hex
+

@@ -1,17 +1,15 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
 from crypto import (
-    hash_password_with_salt,
-    verify_password,
     encrypt,
     decrypt,
     hash_data,
     add_salt,
-    generate_key_pair,  # ✅ AJOUT
+    generate_key_pair,  
 )
 import mysql.connector
 import hashlib, os
-
+from crypto import SEL_UNIQUE
 
 def get_db_connection():
     conn = mysql.connector.connect(
@@ -23,7 +21,6 @@ def get_db_connection():
     return conn
 
 
-# ✅ AJOUT : sauvegarde locale clé privée
 def sauvegarder_cle_privee_local(identifiant: str, cle_privee_pem: bytes):
     dossier = "cles_privees"
     os.makedirs(dossier, exist_ok=True)
@@ -120,10 +117,6 @@ class PageAccueil(tk.Frame):
             command=self.controleur.afficher_inscription,
         ).pack(pady=10)
 
-    def importer_cle(self):
-        fichier = filedialog.askopenfilename(title="Sélectionner la clé privée")
-        if fichier:
-            messagebox.showinfo("Succès", f"Clé importée :\n{fichier}")
 
     def se_connecter(self):
         identifiant = self.entree_id.get().strip()
@@ -140,28 +133,22 @@ class PageAccueil(tk.Frame):
             sql = "SELECT * FROM utilisateurs WHERE nom = %s"
             cursor.execute(sql, (identifiant,))
             user = cursor.fetchone()
-
             cursor.close()
             conn.close()
         except mysql.connector.Error as e:
-            messagebox.showerror("Erreur BDD", f"Erreur de connexion à la BDD : {e}")
+            messagebox.showerror("Erreur BDD", f"Erreur : {e}")
             return
 
-        if not user:
-            messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect.")
-            return
+        if user:
+            hash_bdd = user["mot_de_passe"]
+            hash_saisi = hashlib.sha256((mdp_saisi + SEL_UNIQUE).encode()).hexdigest()
 
-        sel_bdd = user["sel"]
-        hash_bdd = user["mot_de_passe"]
-
-        a_hasher = (mdp_saisi + sel_bdd).encode("utf-8")
-        hash_saisi = hashlib.sha256(a_hasher).hexdigest()
-
-        if hash_saisi == hash_bdd:
-            messagebox.showinfo("Succès", f"Connexion réussie, bienvenue {user['nom']} !")
+            if hash_saisi == hash_bdd:
+                messagebox.showinfo("Succès", f"Bienvenue {user['nom']} !")
+            else:
+                messagebox.showerror("Erreur", "Mot de passe incorrect.")
         else:
-            messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect.")
-
+            messagebox.showerror("Erreur", "Utilisateur inconnu.")
 
 class PageInscription(tk.Frame):
     """Page de création de compte."""
@@ -178,15 +165,6 @@ class PageInscription(tk.Frame):
             pady=20,
         )
         self.compte.pack(expand=True)
-
-        tk.Label(self.compte, text="Clé Publique").grid(
-            row=0, column=0, sticky="w", pady=5
-        )
-        self.entree_cle_pub = tk.Entry(self.compte, width=30)
-        self.entree_cle_pub.grid(row=0, column=1, padx=5, pady=5)
-        tk.Button(self.compte, text="importer", font=("Times New Roman", 8)).grid(
-            row=0, column=2, pady=5
-        )
 
         tk.Label(self.compte, text="Nom Complet").grid(
             row=1, column=0, sticky="w", pady=5
@@ -247,65 +225,43 @@ class PageInscription(tk.Frame):
             return False
         return True
 
-    def generer_sel_et_hash(self, mot_de_passe: str) -> tuple[str, str]:
-        sel = os.urandom(16).hex()
-        a_hasher = (mot_de_passe + sel).encode("utf-8")
-        hash_mdp = hashlib.sha256(a_hasher).hexdigest()
-        return sel, hash_mdp
-
     def finaliser_inscription(self):
         nom_complet = self.entree_nom.get().strip()
-        identifiant = self.entree_id.get().strip()
         mdp1 = self.entree_mdp.get()
         mdp2 = self.entree_mdp_conf.get()
 
-        if not nom_complet or not mdp1 or not mdp2:
-            messagebox.showerror("Erreur", "Nom et mot de passe sont obligatoires.")
+        if not nom_complet or not mdp1:
+            messagebox.showerror("Erreur", "Tous les champs sont requis.")
             return
 
         if mdp1 != mdp2:
-            messagebox.showerror("Erreur", "Les mots de passe ne correspondent pas.")
+            messagebox.showerror("Erreur", "Les mots de passe diffèrent.")
             return
 
         if not self.mot_de_passe_est_robuste(mdp1):
-            messagebox.showerror(
-                "Mot de passe faible",
-                "Le mot de passe doit faire au moins 8 caractères,\n"
-                "contenir une majuscule et un chiffre.",
-            )
+            messagebox.showerror("Erreur", "Mot de passe trop faible.")
             return
 
-        sel, hash_mdp = self.generer_sel_et_hash(mdp1)
-
-        
         cle_privee, cle_publique = generate_key_pair()
 
-        
-        sauvegarder_cle_privee_local(identifiant, cle_privee)
+        sauvegarder_cle_privee_local(nom_complet, cle_privee)
+
+        hash_mdp = hashlib.sha256((mdp1 + SEL_UNIQUE).encode()).hexdigest()
 
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-
-            sql = """
-                INSERT INTO utilisateurs (nom, mot_de_passe, sel, cle_publique)
-                VALUES (%s, %s, %s, %s)
-            """
-
-            valeurs = (nom_complet, hash_mdp, sel, cle_publique.decode("utf-8"))
+            sql = "INSERT INTO utilisateurs (nom, mot_de_passe, cle_publique) VALUES (%s, %s, %s)"
+            valeurs = (nom_complet, hash_mdp, cle_publique.decode("utf-8"))
 
             cursor.execute(sql, valeurs)
             conn.commit()
             cursor.close()
             conn.close()
-
+            messagebox.showinfo("Succès", "Compte créé et clé privée sauvée localement !")
+            self.controleur.afficher_accueil()
         except mysql.connector.Error as e:
-            messagebox.showerror("Erreur BDD", f"Impossible de créer le compte : {e}")
-            return
-
-        messagebox.showinfo("Succès", "Compte créé ! Retour à l'accueil.")
-        self.controleur.afficher_accueil()
-
+            messagebox.showerror("Erreur BDD", f"Erreur : {e}")
 
 if __name__ == "__main__":
     accueil = ApplicationMessagerie()

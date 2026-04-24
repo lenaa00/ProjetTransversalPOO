@@ -1,0 +1,7 @@
+- utilisation bibliotheque cryptography
+- lien git / trello
+- installer pip install mysql-connector-python  
+- 2 tables : messages et utilisateurs avec différentes classes
+- Clé publique --> dans la BDD 
+- CLé privé --> Sur le pc (<cles_privees>)
+- 
