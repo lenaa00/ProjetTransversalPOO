@@ -8,6 +8,7 @@ from crypto import (
 import mysql.connector
 import hashlib, os
 from crypto import SEL_UNIQUE
+from messagerie import PageConversation
 
 def get_db_connection():
     conn = mysql.connector.connect(
@@ -47,7 +48,7 @@ class ApplicationMessagerie(tk.Tk):
 
         self.ecrans = {}
 
-        for F in (PageAccueil, PageInscription):
+        for F in (PageAccueil, PageInscription, PageConversation):
             ecran = F(self.fenetre, self)
             self.ecrans[F] = ecran
             ecran.grid(row=0, column=0, sticky="nsew")
@@ -61,14 +62,24 @@ class ApplicationMessagerie(tk.Tk):
     def afficher_inscription(self):
         ecran = self.ecrans[PageInscription]
         ecran.tkraise()
-
+    def afficher_conversation(self):
+        ecran = self.ecrans[PageConversation]
+        ecran.tkraise()
 
 class PageAccueil(tk.Frame):
     """Page de connexion."""
-
+    def importer_cle(self):
+        chemin = filedialog.askopenfilename(
+            title="Importer la clé privée",
+            filetypes=[("Fichiers PEM", "*.pem"), ("Tous les fichiers", "*.*")]
+        )
+        if chemin:
+            self.chemin_cle = chemin
+            messagebox.showinfo("Clé importée", f"Clé chargée : {chemin}")
     def __init__(self, parent, controleur):
         super().__init__(parent)
         self.controleur = controleur
+        self.chemin_cle = None
 
         tk.Label(
             self, text="PAGE D'ACCUEIL", font=("Times New Roman", 20, "bold")
@@ -143,6 +154,8 @@ class PageAccueil(tk.Frame):
 
             if hash_saisi == hash_bdd:
                 messagebox.showinfo("Succès", f"Bienvenue {user['nom']} !")
+                self.entree_mdp.delete(0, tk.END)
+                self.controleur.afficher_conversation()
             else:
                 messagebox.showerror("Erreur", "Mot de passe incorrect.")
         else:
