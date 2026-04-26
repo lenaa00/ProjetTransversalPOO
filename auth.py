@@ -155,6 +155,8 @@ class PageAccueil(tk.Frame):
             if hash_saisi == hash_bdd:
                 messagebox.showinfo("Succès", f"Bienvenue {user['nom']} !")
                 self.entree_mdp.delete(0, tk.END)
+                page = self.controleur.ecrans[PageConversation]
+                page.definir_utilisateur(user["nom"], f"cles_privees/{user['nom']}_private.pem")
                 self.controleur.afficher_conversation()
             else:
                 messagebox.showerror("Erreur", "Mot de passe incorrect.")
