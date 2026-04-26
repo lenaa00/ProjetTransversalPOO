@@ -9,6 +9,7 @@ import mysql.connector
 import hashlib, os
 from crypto import SEL_UNIQUE
 from messagerie import PageConversation
+from modele_Poo import Utilisateur, Message, Conversation
 
 def get_db_connection():
     conn = mysql.connector.connect(
@@ -20,7 +21,7 @@ def get_db_connection():
     return conn
 
 
-def sauvegarder_cle_privee_local(identifiant: str, cle_privee_pem: bytes):
+def sauvegarder_cleprivee(identifiant: str, cle_privee_pem: bytes):
     dossier = "cles_privees"
     os.makedirs(dossier, exist_ok=True)
 
@@ -33,7 +34,6 @@ def sauvegarder_cle_privee_local(identifiant: str, cle_privee_pem: bytes):
 
 
 class ApplicationMessagerie(tk.Tk):
-    """Contrôleur principal de l'application."""
 
     def __init__(self):
         super().__init__()
@@ -85,29 +85,29 @@ class PageAccueil(tk.Frame):
             self, text="PAGE D'ACCUEIL", font=("Times New Roman", 20, "bold")
         ).pack(pady=40)
 
-        frame_central = tk.Frame(self)
-        frame_central.pack(expand=True)
+        zone_accueil = tk.Frame(self)
+        zone_accueil.pack(expand=True)
 
-        self.login = tk.LabelFrame(
-            frame_central, text="Connexion User", padx=20, pady=20
+        self.connexion = tk.LabelFrame(
+            zone_accueil, text="Connexion User", padx=20, pady=20
         )
-        self.login.pack(side="left", padx=20, fill="y")
+        self.connexion.pack(side="left", padx=20, fill="y")
 
-        tk.Label(self.login, text="Identifiant").pack(anchor="w")
-        self.entree_id = tk.Entry(self.login)
+        tk.Label(self.connexion, text="Identifiant").pack(anchor="w")
+        self.entree_id = tk.Entry(self.connexion)
         self.entree_id.pack(fill="x", pady=(0, 10))
 
-        tk.Label(self.login, text="Mot de passe").pack(anchor="w")
-        self.entree_mdp = tk.Entry(self.login, show="*")
+        tk.Label(self.connexion, text="Mot de passe").pack(anchor="w")
+        self.entree_mdp = tk.Entry(self.connexion, show="*")
         self.entree_mdp.pack(fill="x", pady=(0, 10))
 
-        tk.Label(self.login, text="Clé Privée").pack(anchor="w")
-        tk.Button(self.login, text="importer", command=self.importer_cle).pack(
+        tk.Label(self.connexion, text="Clé Privée").pack(anchor="w")
+        tk.Button(self.connexion, text="importer", command=self.importer_cle).pack(
             anchor="w", pady=(0, 20)
         )
 
         tk.Button(
-            self.login,
+            self.connexion,
             text="SE CONNECTER",
             bg="green",
             fg="white",
@@ -115,7 +115,7 @@ class PageAccueil(tk.Frame):
         ).pack(fill="x")
 
         self.inscription = tk.LabelFrame(
-            frame_central, text="Nouveau ?", padx=20, pady=20
+            zone_accueil, text="Nouveau ?", padx=20, pady=20
         )
         self.inscription.pack(side="left", padx=20, fill="y")
 
@@ -156,7 +156,8 @@ class PageAccueil(tk.Frame):
                 messagebox.showinfo("Succès", f"Bienvenue {user['nom']} !")
                 self.entree_mdp.delete(0, tk.END)
                 page = self.controleur.ecrans[PageConversation]
-                page.definir_utilisateur(user["nom"], f"cles_privees/{user['nom']}_private.pem")
+                utilisateur = Utilisateur(nom=user["nom"], cle_publique=user["cle_publique"])
+                page.definir_utilisateur(utilisateur.nom, f"cles_privees/{utilisateur.nom}_private.pem")
                 self.controleur.afficher_conversation()
             else:
                 messagebox.showerror("Erreur", "Mot de passe incorrect.")
@@ -226,10 +227,10 @@ class PageInscription(tk.Frame):
             text="Création du compte",
             bg="black",
             fg="white",
-            command=self.finaliser_inscription,
+            command=self.cree_compte,
         ).pack(side="left", padx=10)
 
-    def mot_de_passe_est_robuste(self, mdp: str) -> bool:
+    def verifier_mdp(self, mdp: str) -> bool:
         if len(mdp) < 8:
             return False
         if not any(c.isupper() for c in mdp):
@@ -238,7 +239,7 @@ class PageInscription(tk.Frame):
             return False
         return True
 
-    def finaliser_inscription(self):
+    def cree_compte(self):
         nom_complet = self.entree_nom.get().strip()
         mdp1 = self.entree_mdp.get()
         mdp2 = self.entree_mdp_conf.get()
@@ -251,13 +252,13 @@ class PageInscription(tk.Frame):
             messagebox.showerror("Erreur", "Les mots de passe diffèrent.")
             return
 
-        if not self.mot_de_passe_est_robuste(mdp1):
+        if not self.verifier_mdp(mdp1):
             messagebox.showerror("Erreur", "Mot de passe trop faible.")
             return
 
         cle_privee, cle_publique = generate_key_pair()
 
-        sauvegarder_cle_privee_local(nom_complet, cle_privee)
+        sauvegarder_cleprivee(nom_complet, cle_privee)
 
         hash_mdp = hashlib.sha256((mdp1 + SEL_UNIQUE).encode()).hexdigest()
 

@@ -3,6 +3,7 @@ from tkinter import messagebox
 import mysql.connector
 from crypto import encrypt, decrypt
 from cryptography.hazmat.primitives import serialization
+from modele_Poo import Utilisateur, Message, Conversation
 
 def get_db_connection():
     conn = mysql.connector.connect(
@@ -14,9 +15,9 @@ def get_db_connection():
     return conn
 
 class PageConversation(tk.Frame):
-    def __init__(self, parent, controleur):
+    def __init__(self, parent, app_messageie):
         super().__init__(parent)
-        self.controleur = controleur
+        self.app_messageie = app_messageie
         self.utilisateur_connecte = None  
         self.cle_privee = None            
 
@@ -25,65 +26,65 @@ class PageConversation(tk.Frame):
         self.grid_rowconfigure(0, weight=1)
 
         
-        frame_contacts = tk.Frame(self, bg="#2c2c2c", relief="sunken", borderwidth=2)
-        frame_contacts.grid(row=0, column=0, sticky="nsew")
+        page_contacts = tk.Frame(self, bg="#2c2c2c", relief="sunken", borderwidth=2)
+        page_contacts.grid(row=0, column=0, sticky="nsew")
 
-        tk.Label(frame_contacts, text="💬 Conversations", bg="#2c2c2c", fg="white",
+        tk.Label(page_contacts, text="💬 Conversations", bg="#2c2c2c", fg="white",
                  font=("Times New Roman", 14, "bold")).pack(pady=10)
 
-        self.liste_contacts = tk.Listbox(frame_contacts, font=("Times New Roman", 12),
+        self.liste_contacts = tk.Listbox(page_contacts, font=("Times New Roman", 12),
                                           bg="#3c3c3c", fg="white", selectbackground="#4CAF50",
                                           borderwidth=0, highlightthickness=0)
         self.liste_contacts.pack(fill="both", expand=True, padx=10, pady=10)
-        self.liste_contacts.bind("<<ListboxSelect>>", self.charger_conversation)
+        self.liste_contacts.bind("<<ListboxSelect>>", self.ouvrir_conversation)
 
-        tk.Button(frame_contacts, text="Déconnexion", bg="#c0392b", fg="white",
+        tk.Button(page_contacts, text="Déconnexion", bg="#c0392b", fg="white",
                   font=("Times New Roman", 11), command=self.deconnexion).pack(pady=10, padx=10, fill="x")
 
         
-        frame_chat = tk.Frame(self, bg="#f0f0f0")
-        frame_chat.grid(row=0, column=1, sticky="nsew")
-        frame_chat.grid_rowconfigure(1, weight=1)
-        frame_chat.grid_columnconfigure(0, weight=1)
+        zone_messages = tk.Frame(self, bg="#f0f0f0")
+        zone_messages.grid(row=0, column=1, sticky="nsew")
+        zone_messages.grid_rowconfigure(1, weight=1)
+        zone_messages.grid_columnconfigure(0, weight=1)
 
         
-        self.entete = tk.Label(frame_chat, text="Sélectionnez une conversation",
+        self.conversations = tk.Label(zone_messages, text="Sélectionnez une conversation",
                                 bg="#4CAF50", fg="white",
                                 font=("Times New Roman", 13, "bold"), pady=10)
-        self.entete.grid(row=0, column=0, sticky="ew")
+        self.conversations.grid(row=0, column=0, sticky="ew")
 
         
-        frame_messages = tk.Frame(frame_chat, bg="#f0f0f0")
-        frame_messages.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
-        frame_messages.grid_rowconfigure(0, weight=1)
-        frame_messages.grid_columnconfigure(0, weight=1)
+        zone_chat = tk.Frame(zone_messages, bg="#f0f0f0")
+        zone_chat.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        zone_chat.grid_rowconfigure(0, weight=1)
+        zone_chat.grid_columnconfigure(0, weight=1)
 
-        self.historique = tk.Text(frame_messages, state='disabled', wrap="word",
+        self.affichage_messages = tk.Text(zone_chat, state='disabled', wrap="word",
                                    font=("Times New Roman", 12), bg="#f0f0f0",
                                    borderwidth=0, highlightthickness=0, padx=10, pady=10)
-        self.historique.grid(row=0, column=0, sticky="nsew")
+        self.affichage_messages.grid(row=0, column=0, sticky="nsew")
 
-        scrollbar = tk.Scrollbar(frame_messages, command=self.historique.yview)
+        scrollbar = tk.Scrollbar(zone_chat, command=self.affichage_messages.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
-        self.historique.config(yscrollcommand=scrollbar.set)
+        self.affichage_messages.config(yscrollcommand=scrollbar.set)
 
         # Style de page de messagerie 
-        self.historique.tag_configure("moi",foreground="white", background="#4CAF50")
-        self.historique.tag_configure("autre",foreground="#333333", background="#ffffff")
-        self.historique.tag_configure("nom", foreground="#888888", font=("Times New Roman", 9, "italic"))
+        self.affichage_messages.tag_configure("moi",foreground="white", background="#4CAF50")
+        self.affichage_messages.tag_configure("autre",foreground="#333333", background="#ffffff")
+        self.affichage_messages.tag_configure("nom", foreground="#888888", font=("Times New Roman", 9, "italic"))
        
-        frame_saisie = tk.Frame(frame_chat, bg="#e0e0e0", pady=8)
-        frame_saisie.grid(row=2, column=0, sticky="ew")
-        frame_saisie.grid_columnconfigure(0, weight=1)
+        saisie_texte = tk.Frame(zone_messages, bg="#e0e0e0", pady=8)
+        saisie_texte.grid(row=2, column=0, sticky="ew")
+        saisie_texte.grid_columnconfigure(0, weight=1)
 
-        self.entree_message = tk.Entry(frame_saisie, font=("Times New Roman", 12),
+        self.champ_texte = tk.Entry(saisie_texte, font=("Times New Roman", 12),
                                         relief="flat", bg="white", bd=5)
-        self.entree_message.grid(row=0, column=0, sticky="ew", padx=(10, 5), ipady=6)
-        self.entree_message.bind("<Return>", lambda event: self.envoyer_message())
+        self.champ_texte.grid(row=0, column=0, sticky="ew", padx=(10, 5), ipady=6)
+        self.champ_texte.bind("<Return>", lambda event: self.envoyer())
 
-        tk.Button(frame_saisie, text="Envoyer 🔒", bg="#4CAF50", fg="white",
+        tk.Button(saisie_texte, text="Envoyer 🔒", bg="#4CAF50", fg="white",
                   font=("Times New Roman", 11, "bold"),
-                  relief="flat", command=self.envoyer_message).grid(row=0, column=1, padx=(0, 10))
+                  relief="flat", command=self.envoyer).grid(row=0, column=1, padx=(0, 10))
 
     def definir_utilisateur(self, nom, chemin_cle_privee):
         self.utilisateur_connecte = nom
@@ -93,11 +94,11 @@ class PageConversation(tk.Frame):
 
         self.liste_contacts.delete(0, tk.END)
 
-        self.historique.config(state='normal')
-        self.historique.delete(1.0, tk.END)
-        self.historique.config(state='disabled')
+        self.affichage_messages.config(state='normal')
+        self.affichage_messages.delete(1.0, tk.END)
+        self.affichage_messages.config(state='disabled')
 
-        self.entete.config(text="🔒 Sélectionnez une conversation")
+        self.conversations.config(text="🔒 Sélectionnez une conversation")
 
         try:
             conn = get_db_connection()
@@ -110,17 +111,17 @@ class PageConversation(tk.Frame):
         except mysql.connector.Error as e:
             messagebox.showerror("Erreur BDD", f"Erreur : {e}")
 
-    def charger_conversation(self, event):
+    def ouvrir_conversation(self, event):
         selection = self.liste_contacts.curselection()
         if not selection:
             return
         contact = self.liste_contacts.get(selection[0])
 
         
-        self.entete.config(text=f"🔒 Conversation chiffrée avec {contact}")
+        self.conversations.config(text=f"🔒 Conversation chiffrée avec {contact}")
 
-        self.historique.config(state='normal')
-        self.historique.delete(1.0, tk.END)
+        self.affichage_messages.config(state='normal')
+        self.affichage_messages.delete(1.0, tk.END)
 
         try:
             conn = get_db_connection()
@@ -138,25 +139,25 @@ class PageConversation(tk.Frame):
                 try:
                     if msg["destinataire_id"] == self.utilisateur_connecte:
                         texte = decrypt(msg["contenu_chiffre_destinataire"], self.cle_privee).decode("utf-8")
-                        self.historique.insert(tk.END, f"{msg['expediteur_id']}\n", "nom")
-                        self.historique.insert(tk.END, f" {texte} \n\n", "autre")
+                        self.affichage_messages.insert(tk.END, f"{msg['expediteur_id']}\n", "nom")
+                        self.affichage_messages.insert(tk.END, f" {texte} \n\n", "autre")
                     else:
                         texte = decrypt(msg["contenu_chiffre_expediteur"], self.cle_privee).decode("utf-8")
-                        self.historique.insert(tk.END, f"Moi\n", "nom")
-                        self.historique.insert(tk.END, f" {texte} \n\n", "moi")
+                        self.affichage_messages.insert(tk.END, f"Moi\n", "nom")
+                        self.affichage_messages.insert(tk.END, f" {texte} \n\n", "moi")
                 except Exception:
-                    self.historique.insert(tk.END, "[Message illisible]\n")
+                    self.affichage_messages.insert(tk.END, "[Message illisible]\n")
 
             cursor.close()
             conn.close()
         except mysql.connector.Error as e:
             messagebox.showerror("Erreur BDD", f"Erreur : {e}")
 
-        self.historique.config(state='disabled')
-        self.historique.see(tk.END)
+        self.affichage_messages.config(state='disabled')
+        self.affichage_messages.see(tk.END)
 
-    def envoyer_message(self):
-        texte = self.entree_message.get().strip()
+    def envoyer(self):
+        texte = self.champ_texte.get().strip()
         if not texte:
             return
 
@@ -182,20 +183,27 @@ class PageConversation(tk.Frame):
             chiffre_dest = encrypt(msg_bytes, cle_pub_destinataire)
             chiffre_exp  = encrypt(msg_bytes, cle_pub_expediteur)
 
+            nouveau_msg = Message(
+                expediteur=self.utilisateur_connecte,
+                destinataire=contact,
+                contenu_chiffre_dest=chiffre_dest,
+                contenu_chiffre_exp=chiffre_exp
+            )
+
             cursor.execute("""
                 INSERT INTO messages (expediteur_id, destinataire_id, contenu_chiffre_destinataire, contenu_chiffre_expediteur)
                 VALUES (%s, %s, %s, %s)
-            """, (self.utilisateur_connecte, contact, chiffre_dest, chiffre_exp))
+            """, (nouveau_msg.expediteur, nouveau_msg.destinataire, nouveau_msg.contenu_chiffre_dest, nouveau_msg.contenu_chiffre_exp))
             conn.commit()
             cursor.close()
             conn.close()
 
-            self.historique.config(state='normal')
-            self.historique.insert(tk.END, "Moi\n", "nom")
-            self.historique.insert(tk.END, f" {texte} \n\n", "moi")
-            self.historique.config(state='disabled')
-            self.historique.see(tk.END)
-            self.entree_message.delete(0, tk.END)
+            self.affichage_messages.config(state='normal')
+            self.affichage_messages.insert(tk.END, "Moi\n", "nom")
+            self.affichage_messages.insert(tk.END, f" {texte} \n\n", "moi")
+            self.affichage_messages.config(state='disabled')
+            self.affichage_messages.see(tk.END)
+            self.champ_texte.delete(0, tk.END)
 
         except mysql.connector.Error as e:
             messagebox.showerror("Erreur BDD", f"Erreur : {e}")
@@ -204,4 +212,4 @@ class PageConversation(tk.Frame):
         messagebox.showinfo("Déconnexion", "Vous êtes déconnecté.")
         self.utilisateur_connecte = None
         self.cle_privee = None
-        self.controleur.afficher_accueil()
+        self.app_messageie.afficher_accueil()
