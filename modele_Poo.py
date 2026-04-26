@@ -8,11 +8,12 @@ class Utilisateur:
 
 
 class Message:
-    def __init__(self, expediteur, destinataire, contenu_chiffre_dest=None, contenu_chiffre_exp=None):
+    def __init__(self, expediteur, destinataire, contenu_chiffre_dest=None, contenu_chiffre_exp=None, lu=False):
         self.expediteur = expediteur
         self.destinataire = destinataire
         self.contenu_chiffre_dest = contenu_chiffre_dest
         self.contenu_chiffre_exp = contenu_chiffre_exp
+        self.lu = lu
 
     def __str__(self):
         return f"Message de {self.expediteur} à {self.destinataire}"

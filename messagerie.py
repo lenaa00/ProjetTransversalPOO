@@ -147,7 +147,12 @@ class PageConversation(tk.Frame):
                         self.affichage_messages.insert(tk.END, f" {texte} \n\n", "moi")
                 except Exception:
                     self.affichage_messages.insert(tk.END, "[Message illisible]\n")
-
+            cursor.execute("""
+                UPDATE messages SET lu = 1
+                WHERE destinataire_id = %s AND expediteur_id = %s AND lu = 0
+            """, (self.utilisateur_connecte, contact))
+            conn.commit()
+            
             cursor.close()
             conn.close()
         except mysql.connector.Error as e:
