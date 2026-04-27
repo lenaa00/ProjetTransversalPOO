@@ -139,7 +139,7 @@ class PageAccueil(tk.Frame):
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
 
-            sql = "SELECT * FROM utilisateurs WHERE nom = %s"
+            sql = "SELECT * FROM utilisateurs WHERE identifiant = %s"
             cursor.execute(sql, (identifiant,))
             user = cursor.fetchone()
             cursor.close()
@@ -157,7 +157,7 @@ class PageAccueil(tk.Frame):
                 self.entree_mdp.delete(0, tk.END)
                 page = self.controleur.ecrans[PageConversation]
                 utilisateur = Utilisateur(nom=user["nom"], cle_publique=user["cle_publique"])
-                page.definir_utilisateur(utilisateur.nom, f"cles_privees/{utilisateur.nom}_private.pem")
+                page.definir_utilisateur(utilisateur.nom, f"cles_privees/{user['identifiant']}_private.pem")
                 self.controleur.afficher_conversation()
             else:
                 messagebox.showerror("Erreur", "Mot de passe incorrect.")
@@ -241,10 +241,11 @@ class PageInscription(tk.Frame):
 
     def cree_compte(self):
         nom_complet = self.entree_nom.get().strip()
+        identifiant = self.entree_id.get().strip()
         mdp1 = self.entree_mdp.get()
         mdp2 = self.entree_mdp_conf.get()
 
-        if not nom_complet or not mdp1:
+        if not nom_complet or not identifiant or not mdp1:
             messagebox.showerror("Erreur", "Tous les champs sont requis.")
             return
 
@@ -256,23 +257,29 @@ class PageInscription(tk.Frame):
             messagebox.showerror("Erreur", "Mot de passe trop faible.")
             return
 
+        # Génération des clés
         cle_privee, cle_publique = generate_key_pair()
 
-        sauvegarder_cleprivee(nom_complet, cle_privee)
+        # Sauvegarder la clé privée avec l'identifiant (plus logique que le nom)
+        sauvegarder_cleprivee(identifiant, cle_privee)
 
+        # Hash du mot de passe
         hash_mdp = hashlib.sha256((mdp1 + SEL_UNIQUE).encode()).hexdigest()
 
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            sql = "INSERT INTO utilisateurs (nom, mot_de_passe, cle_publique) VALUES (%s, %s, %s)"
-            valeurs = (nom_complet, hash_mdp, cle_publique.decode("utf-8"))
+            sql = """
+                INSERT INTO utilisateurs (nom, identifiant, mot_de_passe, cle_publique)
+                VALUES (%s, %s, %s, %s)
+            """
+            valeurs = (nom_complet, identifiant, hash_mdp, cle_publique.decode("utf-8"))
 
             cursor.execute(sql, valeurs)
             conn.commit()
             cursor.close()
             conn.close()
-            messagebox.showinfo("Succès", "Compte créé et clé privée sauvée localement !")
+            messagebox.showinfo("Succès", "Compte créé et clé privée stockée localement !")
             self.controleur.afficher_accueil()
         except mysql.connector.Error as e:
             messagebox.showerror("Erreur BDD", f"Erreur : {e}")
