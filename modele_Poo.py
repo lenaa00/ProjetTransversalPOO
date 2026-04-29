@@ -8,15 +8,37 @@ class Utilisateur:
 
 
 class Message:
-    def __init__(self, expediteur, destinataire, contenu_chiffre_dest=None, contenu_chiffre_exp=None, lu=False):
+    def __init__(
+        self,
+        expediteur,
+        destinataire,
+        contenu_chiffre_dest=None,
+        contenu_chiffre_exp=None,
+        lu=False,
+        date_programmee=None,
+    ):
         self.expediteur = expediteur
         self.destinataire = destinataire
         self.contenu_chiffre_dest = contenu_chiffre_dest
         self.contenu_chiffre_exp = contenu_chiffre_exp
         self.lu = lu
+        self.date_programmee = date_programmee
 
     def __str__(self):
-        return f"Message de {self.expediteur} à {self.destinataire}"
+        return f"Message de {self.expediteur} a {self.destinataire}"
+
+
+class MessageProgramme(Message):
+    def __init__(self, expediteur, destinataire, contenu, secondes):
+        super().__init__(expediteur, destinataire)
+        self.contenu = contenu
+        self.secondes = secondes
+
+    def __str__(self):
+        return (
+            f"Message programme de {self.expediteur} a {self.destinataire} "
+            f"dans {self.secondes} secondes"
+        )
 
 
 class Conversation:

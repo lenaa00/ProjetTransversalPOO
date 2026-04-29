@@ -1,17 +1,12 @@
 from cryptography.hazmat.primitives import serialization
 
 from crypto import encrypt
-from modele_Poo import Message
+from modele_Poo import MessageProgramme as ModeleMessageProgramme
 
 
-class MessageProgramme(Message):
-    def __init__(self, expediteur, destinataire, contenu, secondes):
-        super().__init__(expediteur, destinataire)
-        self.contenu = contenu
-        self.secondes = secondes
-
-    def enregistrer(self, get_db_connection):
-        conn = get_db_connection()
+class MessageProgramme(ModeleMessageProgramme):
+    def enregistrer(self, connection_bdd):
+        conn = connection_bdd()
         cursor = conn.cursor(dictionary=True)
 
         cursor.execute("SELECT cle_publique FROM utilisateurs WHERE nom = %s", (self.destinataire,))

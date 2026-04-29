@@ -7,7 +7,7 @@ from modele_Poo import Utilisateur, Message, Conversation
 from message_programme import MessageProgramme
 
 
-def get_db_connection():
+def connection_bdd():
     conn = mysql.connector.connect(
         host="localhost",
         user="root",
@@ -173,7 +173,7 @@ class PageConversation(tk.Frame):
         self.conversations.config(text="Selectionnez une conversation")
 
         try:
-            conn = get_db_connection()
+            conn = connection_bdd()
             cursor = conn.cursor()
             cursor.execute("SELECT nom FROM utilisateurs WHERE nom != %s", (nom,))
             for (contact,) in cursor.fetchall():
@@ -199,7 +199,7 @@ class PageConversation(tk.Frame):
         self.affichage_messages.delete(1.0, tk.END)
 
         try:
-            conn = get_db_connection()
+            conn = connection_bdd()
             cursor = conn.cursor(dictionary=True)
 
             cursor.execute(
@@ -265,7 +265,7 @@ class PageConversation(tk.Frame):
         self.contact_actuel = contact
 
         try:
-            conn = get_db_connection()
+            conn = connection_bdd()
             cursor = conn.cursor(dictionary=True)
 
             cursor.execute("SELECT cle_publique FROM utilisateurs WHERE nom = %s", (contact,))
@@ -340,7 +340,7 @@ class PageConversation(tk.Frame):
                 contenu=texte,
                 secondes=int(delai),
             )
-            message_programme.enregistrer(get_db_connection)
+            message_programme.enregistrer(connection_bdd)
 
             self.champ_texte.delete(0, tk.END)
             self.champ_delai.delete(0, tk.END)

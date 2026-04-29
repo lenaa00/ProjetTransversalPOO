@@ -1,9 +1,9 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox
 from crypto import (
     encrypt,
     decrypt,
-    generate_key_pair,  
+    generate_key_pair,
 )
 import mysql.connector
 import hashlib, os
@@ -11,7 +11,8 @@ from crypto import SEL_UNIQUE
 from messagerie import PageConversation
 from modele_Poo import Utilisateur, Message, Conversation
 
-def get_db_connection():
+
+def connection_bdd():
     conn = mysql.connector.connect(
         host="localhost",
         user="root",
@@ -37,7 +38,7 @@ class ApplicationMessagerie(tk.Tk):
 
     def __init__(self):
         super().__init__()
-        self.title("Messagerie Sécurisée")
+        self.title("Messagerie Securisee")
         self.geometry("800x600")
         self.minsize(600, 500)
 
@@ -62,24 +63,18 @@ class ApplicationMessagerie(tk.Tk):
     def afficher_inscription(self):
         ecran = self.ecrans[PageInscription]
         ecran.tkraise()
+
     def afficher_conversation(self):
         ecran = self.ecrans[PageConversation]
         ecran.tkraise()
 
+
 class PageAccueil(tk.Frame):
     """Page de connexion."""
-    def importer_cle(self):
-        chemin = filedialog.askopenfilename(
-            title="Importer la clé privée",
-            filetypes=[("Fichiers PEM", "*.pem"), ("Tous les fichiers", "*.*")]
-        )
-        if chemin:
-            self.chemin_cle = chemin
-            messagebox.showinfo("Clé importée", f"Clé chargée : {chemin}")
+
     def __init__(self, parent, controleur):
         super().__init__(parent)
         self.controleur = controleur
-        self.chemin_cle = None
 
         tk.Label(
             self, text="PAGE D'ACCUEIL", font=("Times New Roman", 20, "bold")
@@ -99,12 +94,7 @@ class PageAccueil(tk.Frame):
 
         tk.Label(self.connexion, text="Mot de passe").pack(anchor="w")
         self.entree_mdp = tk.Entry(self.connexion, show="*")
-        self.entree_mdp.pack(fill="x", pady=(0, 10))
-
-        tk.Label(self.connexion, text="Clé Privée").pack(anchor="w")
-        tk.Button(self.connexion, text="importer", command=self.importer_cle).pack(
-            anchor="w", pady=(0, 20)
-        )
+        self.entree_mdp.pack(fill="x", pady=(0, 20))
 
         tk.Button(
             self.connexion,
@@ -121,11 +111,10 @@ class PageAccueil(tk.Frame):
 
         tk.Button(
             self.inscription,
-            text="Créer un compte",
+            text="Creer un compte",
             font=("Times New Roman", 12),
             command=self.controleur.afficher_inscription,
         ).pack(pady=10)
-
 
     def se_connecter(self):
         identifiant = self.entree_id.get().strip()
@@ -136,7 +125,7 @@ class PageAccueil(tk.Frame):
             return
 
         try:
-            conn = get_db_connection()
+            conn = connection_bdd()
             cursor = conn.cursor(dictionary=True)
 
             sql = "SELECT * FROM utilisateurs WHERE identifiant = %s"
@@ -153,19 +142,23 @@ class PageAccueil(tk.Frame):
             hash_saisi = hashlib.sha256((mdp_saisi + SEL_UNIQUE).encode()).hexdigest()
 
             if hash_saisi == hash_bdd:
-                messagebox.showinfo("Succès", f"Bienvenue {user['nom']} !")
+                messagebox.showinfo("Succes", f"Bienvenue {user['nom']} !")
                 self.entree_mdp.delete(0, tk.END)
                 page = self.controleur.ecrans[PageConversation]
                 utilisateur = Utilisateur(nom=user["nom"], cle_publique=user["cle_publique"])
-                page.definir_utilisateur(utilisateur.nom, f"cles_privees/{user['identifiant']}_private.pem")
+                page.definir_utilisateur(
+                    utilisateur.nom,
+                    f"cles_privees/{user['identifiant']}_private.pem",
+                )
                 self.controleur.afficher_conversation()
             else:
                 messagebox.showerror("Erreur", "Mot de passe incorrect.")
         else:
             messagebox.showerror("Erreur", "Utilisateur inconnu.")
 
+
 class PageInscription(tk.Frame):
-    """Page de création de compte."""
+    """Page de creation de compte."""
 
     def __init__(self, parent, controleur):
         super().__init__(parent)
@@ -173,7 +166,7 @@ class PageInscription(tk.Frame):
 
         self.compte = tk.LabelFrame(
             self,
-            text="Créer un compte sécurisé",
+            text="Creer un compte securise",
             font=("Times New Roman", 14, "bold"),
             padx=30,
             pady=20,
@@ -224,7 +217,7 @@ class PageInscription(tk.Frame):
 
         tk.Button(
             frame_btns,
-            text="Création du compte",
+            text="Creation du compte",
             bg="black",
             fg="white",
             command=self.cree_compte,
@@ -250,24 +243,19 @@ class PageInscription(tk.Frame):
             return
 
         if mdp1 != mdp2:
-            messagebox.showerror("Erreur", "Les mots de passe diffèrent.")
+            messagebox.showerror("Erreur", "Les mots de passe different.")
             return
 
         if not self.verifier_mdp(mdp1):
             messagebox.showerror("Erreur", "Mot de passe trop faible.")
             return
 
-        # Génération des clés
         cle_privee, cle_publique = generate_key_pair()
-
-        # Sauvegarder la clé privée avec l'identifiant (plus logique que le nom)
         sauvegarder_cleprivee(identifiant, cle_privee)
-
-        # Hash du mot de passe
         hash_mdp = hashlib.sha256((mdp1 + SEL_UNIQUE).encode()).hexdigest()
 
         try:
-            conn = get_db_connection()
+            conn = connection_bdd()
             cursor = conn.cursor()
             sql = """
                 INSERT INTO utilisateurs (nom, identifiant, mot_de_passe, cle_publique)
@@ -279,10 +267,11 @@ class PageInscription(tk.Frame):
             conn.commit()
             cursor.close()
             conn.close()
-            messagebox.showinfo("Succès", "Compte créé et clé privée stockée localement !")
+            messagebox.showinfo("Succes", "Compte cree et cle privee stockee localement !")
             self.controleur.afficher_accueil()
         except mysql.connector.Error as e:
             messagebox.showerror("Erreur BDD", f"Erreur : {e}")
+
 
 if __name__ == "__main__":
     accueil = ApplicationMessagerie()
