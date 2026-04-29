@@ -1,25 +1,14 @@
 import tkinter as tk
 from tkinter import messagebox
 from crypto import (
-    encrypt,
-    decrypt,
     generate_key_pair,
 )
 import mysql.connector
 import hashlib, os
 from crypto import SEL_UNIQUE
+from database import connection_bdd
 from messagerie import PageConversation
-from modele_Poo import Utilisateur, Message, Conversation
-
-
-def connection_bdd():
-    conn = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="rsafe",
-    )
-    return conn
+from modele_Poo import Utilisateur
 
 
 def sauvegarder_cleprivee(identifiant: str, cle_privee_pem: bytes):

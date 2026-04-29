@@ -1,11 +1,12 @@
 from cryptography.hazmat.primitives import serialization
 
 from crypto import encrypt
+from database import connection_bdd
 from modele_Poo import MessageProgramme as ModeleMessageProgramme
 
 
 class MessageProgramme(ModeleMessageProgramme):
-    def enregistrer(self, connection_bdd):
+    def enregistrer(self):
         conn = connection_bdd()
         cursor = conn.cursor(dictionary=True)
 

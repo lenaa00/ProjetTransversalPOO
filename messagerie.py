@@ -3,18 +3,9 @@ from tkinter import messagebox
 import mysql.connector
 from crypto import encrypt, decrypt
 from cryptography.hazmat.primitives import serialization
-from modele_Poo import Utilisateur, Message, Conversation
+from database import connection_bdd
+from modele_Poo import Message
 from message_programme import MessageProgramme
-
-
-def connection_bdd():
-    conn = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="rsafe",
-    )
-    return conn
 
 
 class PageConversation(tk.Frame):
@@ -340,7 +331,7 @@ class PageConversation(tk.Frame):
                 contenu=texte,
                 secondes=int(delai),
             )
-            message_programme.enregistrer(connection_bdd)
+            message_programme.enregistrer()
 
             self.champ_texte.delete(0, tk.END)
             self.champ_delai.delete(0, tk.END)
